@@ -1,47 +1,61 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState } from 'react';
+import 'regenerator-runtime/runtime';
 
-const API_KEY = "e467712b257e418838be97cc881a71de";
+const API_KEY = '9fadd7fe702df1756101a89462ef75fa'; 
 
 function App() {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [weather, setWeather] = useState(null);
+  const [error, setError] = useState(null);
 
-  const search = async (e) => {
-    if (e.key === "Enter") {
-      const response = await axios.get(
-        `https://api.openweathermap.org/data/2.5/weather?q=${query}&appid=${API_KEY}`
+  const fetchWeather = async () => {
+    try { 
+      setError(null);
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${query}&appid=${API_KEY}&units=metric`
       );
-      setWeather(response.data);
-      setQuery("");
+      if (!response.ok) {
+        throw new Error('City not found');
+      }
+      const data = await response.json();
+      setWeather(data);
+      setQuery('');  // Clear input after successful fetch
+    } catch (err) {
+      setWeather(null);
+      setError(err.message);
     }
   };
 
-  const kelvinToFahrenheit = (k) => ((k - 273.15) * 9) / 5 + 32;
+  const handleKeyPress = (event) => {
+    if (event.key === 'Enter') {
+      fetchWeather();
+    }
+  };
 
   return (
-    <div className="app">
+    <div>
       <input
         type="text"
         className="search"
-        placeholder="Enter a city"
+        placeholder="Enter city name"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        onKeyPress={search}
+        onKeyDown={handleKeyPress}
       />
+      {error && <div className="error">{error}</div>}
       {weather && (
         <div className="weather">
-          <div className="city">{weather.name}</div>
-          <div className="temperature">
-            {Math.round(kelvinToFahrenheit(weather.main.temp))}°F
-          </div>
-          <div className="description">{weather.weather[0].description}</div>
-          <div className="icon">
+          <h2>
+            {weather.name}, {weather.sys.country}
+          </h2>
+          <p>
             <img
-              src={`http://openweathermap.org/img/w/${weather.weather[0].icon}.png`}
+              src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`}
               alt={weather.weather[0].description}
             />
-          </div>
+          </p>
+          <p>Temperature: {weather.main.temp}°C</p>
+          <p>{weather.weather[0].description}</p>
         </div>
       )}
     </div>
